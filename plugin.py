@@ -1,0 +1,388 @@
+# Baby weather plugin
+#
+# Author: obaby
+# http://www.h4ck.org.cn
+# http://www.findu.co
+# http://www.obaby.org.cn
+"""
+<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="1.0.0" wikilink="http://www.h4ck.org.cn" externallink="https://www.h4ck.org.cn/">
+    <description>
+        <h2>Baby Weather Plugin</h2><br/>
+        支持从国内的天气服务器获取天气信息
+        <h3>Features</h3>
+        <ul style="list-style-type:square">
+            <li>支持和风天气</li>
+            <li>支持彩云天气</li>
+            <li>支持今天明天的天气预报信息</li>
+        </ul>
+        <h3>Devices</h3>
+        <ul style="list-style-type:square">
+            <li>Temperature - 当前温度</li>
+            <li>Feeling Temperature - 当前体感温度</li>
+            <li>Humidity - 湿度</li>
+            <li>Pressure - 气压</li>
+            <li>PM25 - 当前PM25浓度</li>
+            <li>PM10 - 当前PM10浓度</li>
+            <li>SO2 - 当前PSO2浓度</li>
+            <li>Weather forecast(Today) - 今天天气</li>
+            <li>Weather forecast(Tomorrow) - 明天天气</li>
+        </ul>
+        <h3>Configuration</h3>
+        <p>API KEY请自行注册相关的开发者账号，然后获取key。</p>
+        <p>技术支持：http://www.h4ck.org.cn</p>
+        <p>彩云天气：https://open.caiyunapp.com/</p>
+        <p>和风天气：https://dev.heweather.com/</p>
+    </description>
+    <params>
+
+    <param field="Mode1" label="服务器" width="100px">
+        <options>
+            <option label="彩云天气" value="Caiyun"/>
+            <option label="和风天气" value="heweather"/>
+        </options>
+    </param>
+    <param field="Mode2" label="API KEY" width="600px" required="true" default="**********************"/>
+    <param field="Mode3" label="经度" width="600px" required="true" default="116.40"/>
+    <param field="Mode4" label="纬度" width="600px" required="true" default="39.915156"/>
+    <param field="Mode6" label="Debug" width="75px">
+        <options>
+            <option label="True" value="Debug"/>
+            <option label="False" value="Normal"  default="true" />
+        </options>
+    </param>
+    </params>
+</plugin>
+"""
+import requests
+import Domoticz
+
+
+def UpdateDevice(Unit, nValue, sValue, AlwaysUpdate=False):
+    # Make sure that the Domoticz device still exists (they can be deleted) before updating it
+    if Unit in Devices:
+        if Devices[Unit].nValue != nValue or Devices[Unit].sValue != sValue or AlwaysUpdate == True:
+            Devices[Unit].Update(nValue, str(sValue))
+            Domoticz.Log("Update " + Devices[Unit].Name + ": " + str(nValue) + " - '" + str(sValue) + "'")
+    return
+
+
+class BasePlugin:
+    enabled = False
+    httpConn = None
+    server_name = ''
+    server_path = ''
+    server_type = 1
+    forcast_path = ''
+
+    def getWindDirection(self, windBearing):
+
+        if windBearing == None:
+            return ""
+        windBearing = int(windBearing)
+        if windBearing < 0 or windBearing > 360:
+            return ""
+
+        if windBearing > 348 or windBearing <= 11:
+            return "N"
+        if windBearing > 11 and windBearing <= 33:
+            return "NNE"
+        if windBearing > 33 and windBearing <= 57:
+            return "NE"
+        if windBearing > 57 and windBearing <= 78:
+            return "ENE"
+        if windBearing > 78 and windBearing <= 102:
+            return "E"
+        if windBearing > 102 and windBearing <= 123:
+            return "ESE"
+        if windBearing > 123 and windBearing <= 157:
+            return "SE"
+        if windBearing > 157 and windBearing <= 168:
+            return "SSE"
+        if windBearing > 168 and windBearing <= 192:
+            return "S"
+        if windBearing > 192 and windBearing <= 213:
+            return "SSW"
+        if windBearing > 213 and windBearing <= 237:
+            return "SW"
+        if windBearing > 237 and windBearing <= 258:
+            return "WSW"
+        if windBearing > 258 and windBearing <= 282:
+            return "W"
+        if windBearing > 282 and windBearing <= 303:
+            return "WNW"
+        if windBearing > 303 and windBearing <= 327:
+            return "NW"
+        if windBearing > 327 and windBearing <= 348:
+            return "NNW"
+
+        # just in case
+        return ""
+
+    def __init__(self):
+        # self.var = 123
+        return
+
+    def update_device_value(self, unit_id, nvalue, svalue):
+        # Devices[Unit].Update(nValue=nValue, sValue=str(sValue), SignalLevel=50, Image=8)
+        # Devices[unit_id].Update(nValue=nvalue, sValue=str(svalue))
+        UpdateDevice(unit_id, nvalue, svalue, AlwaysUpdate=True)
+
+    def get_weather_data(self):
+        data = requests.get(self.server_name + self.server_path).json()
+        # Domoticz.Logdata)
+        temperature = None
+        humidity = None
+        cloudrate = None
+        visibility = None
+        wind_speed = None
+        wind_direction = None
+        pres = None
+        apparent_temperature = None
+        pm25 = pm10 = so2 = no2 = co = None
+        if self.server_type == 1:
+            status = data['status']
+            if status == 'ok':
+                result = data['result']
+                if result['status'] == 'ok':
+                    temperature = result['temperature']
+                    humidity = result['humidity']
+                    cloudrate = result['cloudrate']
+                    visibility = result['visibility']
+                    wind = result['wind']
+                    wind_speed = wind['speed']
+                    wind_direction = wind['direction']
+                    pres = result['pres']
+                    apparent_temperature = result['apparent_temperature']
+                    pm25 = result['pm25']
+                    pm10 = result['pm10']
+                    so2 = result['so2']
+                    no2 = result['no2']
+                    co = result['co']
+                else:
+                    Domoticz.Log('get data failed')
+            else:
+                Domoticz.Log('get data failed')
+
+        else:
+            if len(data['HeWeather6']) > 0:
+                result = data['HeWeather6'][0]
+                if result['status'] == 'ok':
+                    result = result['now']
+                    cloudrate = result['cloud']
+                    cond_code = result['cond_code']
+                    pres = result['pres']
+                    temperature = result['tmp']
+                    visibility = result['vis']
+                    apparent_temperature = result['fl']
+                    wind_direction = result['wind_deg']
+                    wind_speed = result['wind_spd']
+                else:
+                    Domoticz.Log('get data failed')
+            else:
+                Domoticz.Log('get data failed')
+            # 获取空气质量数据
+            # weather_path = '/s6/air/now?location=' + Parameters['Mode3'] + ',' + Parameters['Mode4'] + '&key=' + \
+            #                    Parameters['Mode2']
+            #
+            # wdata = requests.get(self.server_name + self.weather_path).json()
+
+        if temperature:
+            self.update_device_value(1, int(temperature), str(temperature))
+        if humidity:
+            self.update_device_value(2, int(humidity * 100), str(humidity))
+        if temperature and humidity:
+            self.update_device_value(5, 0, str(temperature) + ';' + str(humidity * 100) + ';1')
+        # if cloudrate:
+        #     self.update_device_value()
+        if visibility:
+            self.update_device_value(7, int(visibility), str(visibility))
+        if wind_speed and wind_direction:
+            self.update_device_value(8, 0, str(wind_direction)
+                                     + ";" + self.getWindDirection(wind_direction)
+                                     + ";" + str(round(float(wind_speed) * 10))
+                                     + ";" + str(round(float(wind_speed) * 10))
+                                     + ";0;0")
+            # UpdateDevice(8, 0, str(wind_speed)
+            #              + ";" + str(wind_direction)
+            #              + ";" + str(round(wind_speed * 10))
+            #              + ";" + str(round(wind_speed * 10))
+            #              + ";0;0")
+        if pres:
+            self.update_device_value(3, int(pres), str(pres))
+        if apparent_temperature:
+            self.update_device_value(6, int(apparent_temperature), str(apparent_temperature))
+
+        if pm25:
+            self.update_device_value(4, int(pm25), str(pm25))
+        if pm10:
+            self.update_device_value(41, int(pm10), str(pm10))
+        if so2:
+            self.update_device_value(41, int(so2), str(so2))
+        if no2:
+            self.update_device_value(43, int(no2), str(no2))
+        if co:
+            self.update_device_value(44, int(co), str(co))
+
+
+    def get_forcast_data(self):
+        data = requests.get(self.server_name + self.forcast_path).json()
+        Domoticz.Log('forcast:')
+        # Domoticz.Log(data)
+        today_cast = tommorw_cast = None
+        today_tmp_min = today_tmp_max = None
+        tomorrwo_tmp_min = tomorrow_tmp_max = None
+        if self.server_type == 1:
+            status = data['status']
+            if status == 'ok':
+                result = data['result']
+                forcast = result['daily']
+                skyicon = forcast['skycon']
+                today_cast = skyicon[0]['value']
+                tommorw_cast = skyicon[1]['value']
+                # Domoticz.Log(tommorw_cast)
+                tmps = forcast['temperature']
+                today_tmp_min= tmps[0]['min']
+                today_tmp_max = tmps[0]['max']
+                tomorrwo_tmp_min= tmps[1]['min']
+                tomorrow_tmp_max = tmps[1]['max']
+        else:
+            if len(data['HeWeather6']) > 0:
+                result = data['HeWeather6'][0]
+                if result['status'] == 'ok':
+                    result = result['daily_forecast']
+                    today_cast = result[0]['cond_txt_d']
+                    tommorw_cast = result[1]['cond_txt_d']
+                    # Domoticz.Log(tommorw_cast)
+                    # Domoticz.Log(today_cast)
+                    today_tmp_min = result[0]['tmp_min']
+                    tomorrwo_tmp_min = result[1]['tmp_min']
+                    today_tmp_max = result[0]['tmp_max']
+                    tomorrow_tmp_max = result[1]['tmp_max']
+        if today_cast:
+            self.update_device_value(9,0, str(today_cast) + ' 温度：' + str(today_tmp_min) + ' - ' + str(today_tmp_max))
+        if tommorw_cast:
+            self.update_device_value(10, 0, str(tommorw_cast) + ' 温度：' + str(tomorrwo_tmp_min) + ' - ' + str(tomorrow_tmp_max))
+
+    def onStart(self):
+        Domoticz.Log("onStart called")
+        if Parameters["Mode6"] == "Debug":
+            Domoticz.Debugging(1)
+        if Parameters['Mode1'] == 'Caiyun':
+            # https://api.caiyunapp.com/v2/Y2FpeXVuIGFuZHJpb2QgYXBp/116.404412,39.915156/realtime.json
+            self.server_name = 'https://api.caiyunapp.com'
+            self.server_path = '/v2/' + Parameters['Mode2'] + '/' + Parameters['Mode3'] + ',' + Parameters[
+                'Mode4'] + '/realtime.json'
+            self.server_type = 1
+            self.forcast_path = '/v2/' + Parameters['Mode2'] + '/' + Parameters['Mode3'] + ',' + Parameters[
+                'Mode4'] + '/weather.json'
+        else:
+            # https://free-api.heweather.net/s6/weather/now?location=116.40,39.9&key=8e73aadb5f014e23abc507360bcdfb34
+            self.server_name = 'https://free-api.heweather.net'
+            self.server_path = '/s6/weather/now?location=' + Parameters['Mode3'] + ',' + Parameters['Mode4'] + '&key=' + \
+                               Parameters['Mode2']
+            self.server_type = 2
+            self.forcast_path = '/s6/weather/forecast?location=' + Parameters['Mode3'] + ',' + Parameters[
+                'Mode4'] + '&key=' + Parameters['Mode2']
+
+        if (len(Devices) == 0):
+            Domoticz.Device(Name="Temperature", Unit=1, TypeName='Temperature', Used=1).Create()
+            Domoticz.Device(Name="Feeling Temperature", Unit=6, TypeName='Temperature', Used=1).Create()
+            Domoticz.Device(Name="Humidity", Unit=2, TypeName='Humidity', Used=1).Create()
+            Domoticz.Device(Name="Pressure", Unit=3, TypeName='Pressure', Used=1).Create()
+            Domoticz.Device(Name="PM2.5", Unit=4, TypeName='Air Quality', Used=1).Create()
+            Domoticz.Device(Name="PM10", Unit=41, TypeName='Air Quality', Used=1).Create()
+            Domoticz.Device(Name="SO2", Unit=42, TypeName='Air Quality', Used=1).Create()
+            Domoticz.Device(Name="NO2", Unit=43, TypeName='Air Quality', Used=1).Create()
+            Domoticz.Device(Name="CO", Unit=44, TypeName='Air Quality', Used=1).Create()
+            Domoticz.Device(Name="Temp+Hum", Unit=5, TypeName='Temp+Hum', Used=1).Create()
+            Domoticz.Device(Name="Visibility", Unit=7, TypeName='Visibility', Used=1).Create()
+            Domoticz.Device(Name="Wind", Unit=8, TypeName='Wind', Used=1).Create()
+            Domoticz.Device(Name="Weather forecast(Today)", Unit=9, TypeName='Text', Used=1).Create()
+            Domoticz.Device(Name="Weather forecast(Tomorrow)", Unit=10, TypeName='Text', Used=1).Create()
+        self.get_weather_data()
+        self.get_forcast_data()
+
+
+    def onStop(self):
+        Domoticz.Log("onStop called")
+
+    def onConnect(self, Connection, Status, Description):
+        Domoticz.Log("onConnect called")
+
+    def onMessage(self, Connection, Data):
+        Domoticz.Log("onMessage called")
+
+    def onCommand(self, Unit, Command, Level, Hue):
+        Domoticz.Log(
+            "onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+
+    def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
+        Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + "," + Status + "," + str(
+            Priority) + "," + Sound + "," + ImageFile)
+
+    def onDisconnect(self, Connection):
+        Domoticz.Log("onDisconnect called")
+
+    def onHeartbeat(self):
+        Domoticz.Log("onHeartbeat called")
+
+
+global _plugin
+_plugin = BasePlugin()
+
+
+def onStart():
+    global _plugin
+    _plugin.onStart()
+
+
+def onStop():
+    global _plugin
+    _plugin.onStop()
+
+
+def onConnect(Connection, Status, Description):
+    global _plugin
+    _plugin.onConnect(Connection, Status, Description)
+
+
+def onMessage(Connection, Data):
+    global _plugin
+    _plugin.onMessage(Connection, Data)
+
+
+def onCommand(Unit, Command, Level, Hue):
+    global _plugin
+    _plugin.onCommand(Unit, Command, Level, Hue)
+
+
+def onNotification(Name, Subject, Text, Status, Priority, Sound, ImageFile):
+    global _plugin
+    _plugin.onNotification(Name, Subject, Text, Status, Priority, Sound, ImageFile)
+
+
+def onDisconnect(Connection):
+    global _plugin
+    _plugin.onDisconnect(Connection)
+
+
+def onHeartbeat():
+    global _plugin
+    _plugin.onHeartbeat()
+
+    # Generic helper functions
+
+
+def DumpConfigToLog():
+    for x in Parameters:
+        if Parameters[x] != "":
+            Domoticz.Debug("'" + x + "':'" + str(Parameters[x]) + "'")
+    Domoticz.Debug("Device count: " + str(len(Devices)))
+    for x in Devices:
+        Domoticz.Debug("Device:           " + str(x) + " - " + str(Devices[x]))
+        Domoticz.Debug("Device ID:       '" + str(Devices[x].ID) + "'")
+        Domoticz.Debug("Device Name:     '" + Devices[x].Name + "'")
+        Domoticz.Debug("Device nValue:    " + str(Devices[x].nValue))
+        Domoticz.Debug("Device sValue:   '" + Devices[x].sValue + "'")
+        Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
+    return
