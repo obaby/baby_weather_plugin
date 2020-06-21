@@ -21,19 +21,19 @@
 > 1. 下载zip之后解压缩，放入Domoticz/plugins目录下，重启服务端。去网页端添加硬件即可。  
 > 2. 切换到插件目录下，git clone https://github.com/obaby/baby_weather_plugin 重启服务端。去网页端添加硬件即可。  
 
-添加硬件截图：
+添加硬件截图：  
 ![device](screenshot/device.jpg)  
 
-终端运行效果:
+终端运行效果:  
 ![console](screenshot/console.png)  
 
-数据信息：
+数据信息：  
 ![weather](screenshot/weather.png)  
 ![wind](screenshot/wind.png)  
 ![temp](screenshot/temp.png)  
 ![home](screenshot/home.png)  
 
-项目依赖：
+项目依赖：  
 requests
 ```bash
 pip3 install requests
