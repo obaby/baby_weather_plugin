@@ -1,0 +1,2 @@
+#Domoticz Baby Weather Plugin
+

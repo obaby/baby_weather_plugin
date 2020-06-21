@@ -44,6 +44,7 @@
     <param field="Mode2" label="API KEY" width="600px" required="true" default="**********************"/>
     <param field="Mode3" label="经度" width="600px" required="true" default="116.40"/>
     <param field="Mode4" label="纬度" width="600px" required="true" default="39.915156"/>
+    <param field="Mode5" label="更新频率(分钟)" width="60px" required="true" default="60"/>
     <param field="Mode6" label="Debug" width="75px">
         <options>
             <option label="True" value="Debug"/>
@@ -265,6 +266,9 @@ class BasePlugin:
 
     def onStart(self):
         Domoticz.Log("onStart called")
+        self.repeatTime = int(Parameters["Mode5"]) * 6
+        self.intervalTime = self.repeatTime
+
         if Parameters["Mode6"] == "Debug":
             Domoticz.Debugging(1)
         if Parameters['Mode1'] == 'Caiyun':
@@ -289,11 +293,16 @@ class BasePlugin:
             Domoticz.Device(Name="Feeling Temperature", Unit=6, TypeName='Temperature', Used=1).Create()
             Domoticz.Device(Name="Humidity", Unit=2, TypeName='Humidity', Used=1).Create()
             Domoticz.Device(Name="Pressure", Unit=3, TypeName='Pressure', Used=1).Create()
-            Domoticz.Device(Name="PM2.5", Unit=4, TypeName='Air Quality', Used=1).Create()
-            Domoticz.Device(Name="PM10", Unit=41, TypeName='Air Quality', Used=1).Create()
-            Domoticz.Device(Name="SO2", Unit=42, TypeName='Air Quality', Used=1).Create()
-            Domoticz.Device(Name="NO2", Unit=43, TypeName='Air Quality', Used=1).Create()
-            Domoticz.Device(Name="CO", Unit=44, TypeName='Air Quality', Used=1).Create()
+            Domoticz.Device(Name="PM2.5", Unit=4,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="PM10", Unit=41,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="SO2", Unit=42,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="NO2", Unit=43,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="CO", Unit=44,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
+            # Domoticz.Device(Name="PM2.5", Unit=4, TypeName='Air Quality', Used=1).Create()
+            # Domoticz.Device(Name="PM10", Unit=41, TypeName='Air Quality', Used=1).Create()
+            # Domoticz.Device(Name="SO2", Unit=42, TypeName='Air Quality', Used=1).Create()
+            # Domoticz.Device(Name="NO2", Unit=43, TypeName='Air Quality', Used=1).Create()
+            # Domoticz.Device(Name="CO", Unit=44, TypeName='Air Quality', Used=1).Create()
             Domoticz.Device(Name="Temp+Hum", Unit=5, TypeName='Temp+Hum', Used=1).Create()
             Domoticz.Device(Name="Visibility", Unit=7, TypeName='Visibility', Used=1).Create()
             Domoticz.Device(Name="Wind", Unit=8, TypeName='Wind', Used=1).Create()
@@ -325,6 +334,11 @@ class BasePlugin:
 
     def onHeartbeat(self):
         Domoticz.Log("onHeartbeat called")
+        self.intervalTime += 1
+        if self.intervalTime >= self.repeatTime:
+            self.get_weather_data()
+            self.get_forcast_data()
+            self.intervalTime = 0
 
 
 global _plugin
