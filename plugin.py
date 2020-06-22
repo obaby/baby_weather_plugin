@@ -191,6 +191,8 @@ class BasePlugin:
             #
             # wdata = requests.get(self.server_name + self.weather_path).json()
 
+        # https://github.com/Xorfor/Domoticz-API/wiki/Device#properties
+
         if temperature:
             self.update_device_value(1, int(temperature), str(temperature))
         if humidity:
