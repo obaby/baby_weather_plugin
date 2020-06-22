@@ -5,12 +5,13 @@
 # http://www.findu.co
 # http://www.obaby.org.cn
 """
-<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="1.0.0" wikilink="http://www.h4ck.org.cn" externallink="https://www.h4ck.org.cn/">
+<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="2.0.1" wikilink="http://www.h4ck.org.cn" externallink="https://github.com/obaby/baby_weather_plugin">
     <description>
         <h2>Baby Weather Plugin</h2><br/>
         支持从国内的天气服务器获取天气信息
         <h3>Features</h3>
         <ul style="list-style-type:square">
+            <li>版本号：2.0.1</li>
             <li>支持和风天气</li>
             <li>支持彩云天气</li>
             <li>支持今天明天的天气预报信息</li>
@@ -55,6 +56,7 @@
 </plugin>
 """
 import requests
+
 try:
     import Domoticz
 except:
@@ -123,6 +125,45 @@ class BasePlugin:
         # just in case
         return ""
 
+    def calc_hum_status(self, hum):
+        # Humidity status: 0 - Normal, 1 - Comfort, 2 - Dry, 3 - Wet
+        status = '0'
+        hum = int(hum)
+        if 0 < hum < 30:
+            status = '2'
+        elif 31 <= hum <= 70:
+            status = '1'
+        elif 70 < hum:
+            status = '3'
+        return status
+
+    def get_heweather_forcast_status(self, status):
+        # Forecast: 0 - None, 1 - Sunny, 2 - PartlyCloudy, 3 - Cloudy, 4 - Rain
+        forcast = '0'
+        status = int(status)
+        if status in [100, 200, 201, ]:
+            forcast = '1'
+        if status in [102, 103]:
+            forcast = '2'
+        if status in [101, 104]:
+            forcast = '3'
+        if 300 <= status <= 400:
+            forcast = '4'
+        return forcast
+
+    def get_caiyun_forcast_status(self, status):
+        forcast = '0'
+        if status in ['CLEAR_DAY', 'CLEAR_NIGHT']:
+            forcast = '1'
+        if status in ['PARTLY_CLOUDY_DAY', 'PARTLY_CLOUDY_NIGHT']:
+            forcast = '2'
+        if status in ['CLOUDY']:
+            forcast = '3'
+        if status in ['LIGHT_RAIN', 'MODERATE_RAIN', 'HEAVY_RAIN', 'STORM_RAIN', 'LIGHT_SNOW', 'MODERATE_SNOW',
+                      'HEAVY_SNOW', 'STORM_SNOW']:
+            forcast = '4'
+        return forcast
+
     def __init__(self):
         # self.var = 123
         return
@@ -156,7 +197,7 @@ class BasePlugin:
                     wind = result['wind']
                     wind_speed = wind['speed']
                     wind_direction = wind['direction']
-                    pres = result['pres']
+                    pres = int(result['pres']) /100
                     apparent_temperature = result['apparent_temperature']
                     pm25 = result['pm25']
                     pm10 = result['pm10']
@@ -197,8 +238,8 @@ class BasePlugin:
             self.update_device_value(1, int(temperature), str(temperature))
         if humidity:
             self.update_device_value(2, int(humidity * 100), str(humidity))
-        if temperature and humidity:
-            self.update_device_value(5, 0, str(temperature) + ';' + str(humidity * 100) + ';1')
+        # if temperature and humidity:
+        #     self.update_device_value(5, 0, str(temperature) + ';' + str(humidity * 100) + ';1')
         # if cloudrate:
         #     self.update_device_value()
         if visibility:
@@ -230,7 +271,6 @@ class BasePlugin:
         if co:
             self.update_device_value(44, int(co), str(co))
 
-
     def get_forcast_data(self):
         data = requests.get(self.server_name + self.forcast_path).json()
         Domoticz.Log('forcast:')
@@ -238,6 +278,9 @@ class BasePlugin:
         today_cast = tommorw_cast = None
         today_tmp_min = today_tmp_max = None
         tomorrwo_tmp_min = tomorrow_tmp_max = None
+        today_hum = tomorrow_hum = None
+        today_forcast_statu = forcast_status = '0'
+        today_press = tommorw_press = None
         if self.server_type == 1:
             status = data['status']
             if status == 'ok':
@@ -248,10 +291,29 @@ class BasePlugin:
                 tommorw_cast = skyicon[1]['value']
                 # Domoticz.Log(tommorw_cast)
                 tmps = forcast['temperature']
-                today_tmp_min= tmps[0]['min']
+                today_tmp_min = tmps[0]['min']
                 today_tmp_max = tmps[0]['max']
-                tomorrwo_tmp_min= tmps[1]['min']
+                tomorrwo_tmp_min = tmps[1]['min']
                 tomorrow_tmp_max = tmps[1]['max']
+                hum = forcast['humidity']
+                #  {
+                #                     "date":"2020-06-21",
+                #                     "max":0.55,
+                #                     "min":0.21,
+                #                     "avg":0.37
+                #                 },
+                today_hum = hum[0]['avg']  #
+                today_hum = float(today_hum) * 100
+
+                tomorrow_hum = hum[1]['avg']
+                tomorrow_hum = float(tomorrow_hum) * 100
+                forcast_status = self.get_caiyun_forcast_status(tommorw_cast)
+                today_forcast_statu = self.get_caiyun_forcast_status(today_cast)
+                press = forcast['pres']
+                today_press = press[0]['avg']
+                tommorw_press = press[1]['avg']
+                today_press = int(today_press) /100
+                tommorw_press = int(tommorw_press) /100
         else:
             if len(data['HeWeather6']) > 0:
                 result = data['HeWeather6'][0]
@@ -259,16 +321,39 @@ class BasePlugin:
                     result = result['daily_forecast']
                     today_cast = result[0]['cond_txt_d']
                     tommorw_cast = result[1]['cond_txt_d']
+                    today_cast_id = result[0]['cond_code_d']
+                    tomorrow_cast_id = result[1]['cond_code_d']
                     # Domoticz.Log(tommorw_cast)
                     # Domoticz.Log(today_cast)
                     today_tmp_min = result[0]['tmp_min']
                     tomorrwo_tmp_min = result[1]['tmp_min']
                     today_tmp_max = result[0]['tmp_max']
                     tomorrow_tmp_max = result[1]['tmp_max']
+                    today_hum = int(result[0]['hum'])
+                    tomorrow_hum = int(result[1]['hum'])
+                    forcast_status = self.get_heweather_forcast_status(tomorrow_cast_id)
+                    today_forcast_statu = self.get_heweather_forcast_status(today_cast_id)
+                    today_press = int(result[0]['pres'])
+                    tommorw_press = int(result[1]['pres'])
         if today_cast:
-            self.update_device_value(9,0, str(today_cast) + ' 温度：' + str(today_tmp_min) + ' - ' + str(today_tmp_max))
+            self.update_device_value(9, 0, str(today_cast) + ' 温度：' + str(today_tmp_min) + ' - ' + str(today_tmp_max))
         if tommorw_cast:
-            self.update_device_value(10, 0, str(tommorw_cast) + ' 温度：' + str(tomorrwo_tmp_min) + ' - ' + str(tomorrow_tmp_max))
+            self.update_device_value(10, 0,
+                                     str(tommorw_cast) + ' 温度：' + str(tomorrwo_tmp_min) + ' - ' + str(tomorrow_tmp_max))
+        print('todayhum:', today_hum)
+        print('tomorrowhum:', tomorrow_hum)
+        if today_cast and tommorw_cast:
+            # Temperature;Humidity;Humidity Status;Barometer;Forecast
+            self.update_device_value(5, 0, str(today_tmp_min) + ';'
+                                     + str(int(today_hum)) + ';'
+                                     + str(self.calc_hum_status(today_hum)) + ';'
+                                     + str(today_press) + ';'
+                                     + str(today_forcast_statu))
+            self.update_device_value(11, 0, str(tomorrow_tmp_max) + ';'
+                                     + str(int(tomorrow_hum)) + ';'
+                                     + str(self.calc_hum_status(tomorrow_hum)) + ';'
+                                     + str(tommorw_press) + ';'
+                                     + str(forcast_status))
 
     def onStart(self):
         Domoticz.Log("onStart called")
@@ -299,11 +384,11 @@ class BasePlugin:
             Domoticz.Device(Name="Feeling Temperature", Unit=6, TypeName='Temperature', Used=1).Create()
             Domoticz.Device(Name="Humidity", Unit=2, TypeName='Humidity', Used=1).Create()
             Domoticz.Device(Name="Pressure", Unit=3, TypeName='Pressure', Used=1).Create()
-            Domoticz.Device(Name="PM2.5", Unit=4,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
-            Domoticz.Device(Name="PM10", Unit=41,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
-            Domoticz.Device(Name="SO2", Unit=42,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
-            Domoticz.Device(Name="NO2", Unit=43,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
-            Domoticz.Device(Name="CO", Unit=44,  TypeName="Custom", Options={"Custom":"1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="PM2.5", Unit=4, TypeName="Custom", Options={"Custom": "1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="PM10", Unit=41, TypeName="Custom", Options={"Custom": "1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="SO2", Unit=42, TypeName="Custom", Options={"Custom": "1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="NO2", Unit=43, TypeName="Custom", Options={"Custom": "1;μg/m³"}, Used=1).Create()
+            Domoticz.Device(Name="CO", Unit=44, TypeName="Custom", Options={"Custom": "1;μg/m³"}, Used=1).Create()
             # Domoticz.Device(Name="PM2.5", Unit=4, TypeName='Air Quality', Used=1).Create()
             # Domoticz.Device(Name="PM10", Unit=41, TypeName='Air Quality', Used=1).Create()
             # Domoticz.Device(Name="SO2", Unit=42, TypeName='Air Quality', Used=1).Create()
@@ -316,14 +401,14 @@ class BasePlugin:
             # sValue is string with values separated by semicolon: Temperature;Humidity;Humidity Status;Barometer;Forecast
             # Humidity status: 0 - Normal, 1 - Comfort, 2 - Dry, 3 - Wet
             # Forecast: 0 - None, 1 - Sunny, 2 - PartlyCloudy, 3 - Cloudy, 4 - Rain
-            Domoticz.Device(Name="Temp+Hum", Unit=5, TypeName='Temp+Hum', Used=1).Create()
+            Domoticz.Device(Name="THB(Today)", Unit=5, TypeName='Temp+Hum+Baro', Used=1).Create()
+            Domoticz.Device(Name="THB(Tomorrow)", Unit=11, TypeName='Temp+Hum+Baro', Used=1).Create()
             Domoticz.Device(Name="Visibility", Unit=7, TypeName='Visibility', Used=1).Create()
             Domoticz.Device(Name="Wind", Unit=8, TypeName='Wind', Used=1).Create()
             Domoticz.Device(Name="Weather forecast(Today)", Unit=9, TypeName='Text', Used=1).Create()
             Domoticz.Device(Name="Weather forecast(Tomorrow)", Unit=10, TypeName='Text', Used=1).Create()
         self.get_weather_data()
         self.get_forcast_data()
-
 
     def onStop(self):
         Domoticz.Log("onStop called")
