@@ -55,7 +55,10 @@
 </plugin>
 """
 import requests
-import Domoticz
+try:
+    import Domoticz
+except:
+    import fakeDomoticz as Domoticz
 
 
 def UpdateDevice(Unit, nValue, sValue, AlwaysUpdate=False):
@@ -75,6 +78,7 @@ class BasePlugin:
     server_type = 1
     forcast_path = ''
 
+    # https://pypi.org/project/buienradar/
     def getWindDirection(self, windBearing):
 
         if windBearing == None:
@@ -303,6 +307,13 @@ class BasePlugin:
             # Domoticz.Device(Name="SO2", Unit=42, TypeName='Air Quality', Used=1).Create()
             # Domoticz.Device(Name="NO2", Unit=43, TypeName='Air Quality', Used=1).Create()
             # Domoticz.Device(Name="CO", Unit=44, TypeName='Air Quality', Used=1).Create()
+            # https://en.domoticz.cn/wiki/Developing_a_Python_plugin#Available_Device_Types
+            # Temperature + Humidity + Barometer sensor
+            # Device.Update(nValue, sValue)
+            # nValue is always 0,
+            # sValue is string with values separated by semicolon: Temperature;Humidity;Humidity Status;Barometer;Forecast
+            # Humidity status: 0 - Normal, 1 - Comfort, 2 - Dry, 3 - Wet
+            # Forecast: 0 - None, 1 - Sunny, 2 - PartlyCloudy, 3 - Cloudy, 4 - Rain
             Domoticz.Device(Name="Temp+Hum", Unit=5, TypeName='Temp+Hum', Used=1).Create()
             Domoticz.Device(Name="Visibility", Unit=7, TypeName='Visibility', Used=1).Create()
             Domoticz.Device(Name="Wind", Unit=8, TypeName='Wind', Used=1).Create()

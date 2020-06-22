@@ -2,3 +2,5 @@
 venv3_home_mini/
 .idea
 .idea/
+venv/
+/venv/
