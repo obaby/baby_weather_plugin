@@ -1,0 +1,35 @@
+{
+    "HeWeather6":[
+        {
+            "basic":{
+                "cid":"CN101011600",
+                "location":"东城",
+                "parent_city":"北京",
+                "admin_area":"北京",
+                "cnty":"中国",
+                "lat":"39.91754532",
+                "lon":"116.41875458",
+                "tz":"+8.00"
+            },
+            "update":{
+                "loc":"2020-06-23 20:51",
+                "utc":"2020-06-23 12:51"
+            },
+            "status":"ok",
+            "now":{
+                "cloud":"10",
+                "cond_code":"101",
+                "cond_txt":"多云",
+                "fl":"24",
+                "hum":"64",
+                "pcpn":"0.0",
+                "pres":"999",
+                "tmp":"25",
+                "vis":"16",
+                "wind_deg":"110",
+                "wind_dir":"东南风",
+                "wind_sc":"3",
+                "wind_spd":"18"
+            }
+        }]
+}

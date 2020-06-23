@@ -5,13 +5,13 @@
 # http://www.findu.co
 # http://www.obaby.org.cn
 """
-<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="2.0.1" wikilink="http://www.h4ck.org.cn" externallink="https://github.com/obaby/baby_weather_plugin">
+<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="2.1.0" wikilink="http://www.h4ck.org.cn" externallink="https://github.com/obaby/baby_weather_plugin">
     <description>
         <h2>Baby Weather Plugin</h2><br/>
         支持从国内的天气服务器获取天气信息
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>版本号：2.0.1</li>
+            <li>版本号：2.1.0</li>
             <li>支持和风天气</li>
             <li>支持彩云天气</li>
             <li>支持今天明天的天气预报信息</li>
@@ -56,6 +56,7 @@
 </plugin>
 """
 import requests
+import datetime
 
 try:
     import Domoticz
@@ -79,6 +80,9 @@ class BasePlugin:
     server_path = ''
     server_type = 1
     forcast_path = ''
+
+    def is_daytime_now(self):
+        return 6 <= datetime.datetime.now().hour <= 16
 
     # https://pypi.org/project/buienradar/
     def getWindDirection(self, windBearing):
@@ -197,7 +201,7 @@ class BasePlugin:
                     wind = result['wind']
                     wind_speed = wind['speed']
                     wind_direction = wind['direction']
-                    pres = int(result['pres']) /100
+                    pres = int(result['pres']) / 100
                     apparent_temperature = result['apparent_temperature']
                     pm25 = result['pm25']
                     pm10 = result['pm10']
@@ -222,6 +226,7 @@ class BasePlugin:
                     apparent_temperature = result['fl']
                     wind_direction = result['wind_deg']
                     wind_speed = result['wind_spd']
+                    humidity = float(result['hum']) /100
                 else:
                     Domoticz.Log('get data failed')
             else:
@@ -312,14 +317,17 @@ class BasePlugin:
                 press = forcast['pres']
                 today_press = press[0]['avg']
                 tommorw_press = press[1]['avg']
-                today_press = int(today_press) /100
-                tommorw_press = int(tommorw_press) /100
+                today_press = int(today_press) / 100
+                tommorw_press = int(tommorw_press) / 100
         else:
             if len(data['HeWeather6']) > 0:
                 result = data['HeWeather6'][0]
                 if result['status'] == 'ok':
                     result = result['daily_forecast']
-                    today_cast = result[0]['cond_txt_d']
+                    if self.is_daytime_now():
+                        today_cast = result[0]['cond_txt_d']
+                    else:
+                        today_cast = result[0]['cond_txt_n']
                     tommorow_cast = result[1]['cond_txt_d']
                     today_cast_id = result[0]['cond_code_d']
                     tomorrow_cast_id = result[1]['cond_code_d']
@@ -339,7 +347,8 @@ class BasePlugin:
             self.update_device_value(9, 0, str(today_cast) + ' 温度：' + str(today_tmp_min) + ' - ' + str(today_tmp_max))
         if tommorow_cast:
             self.update_device_value(10, 0,
-                                     str(tommorow_cast) + ' 温度：' + str(tomorrow_tmp_min) + ' - ' + str(tomorrow_tmp_max))
+                                     str(tommorow_cast) + ' 温度：' + str(tomorrow_tmp_min) + ' - ' + str(
+                                         tomorrow_tmp_max))
         print('todayhum:', today_hum)
         print('tomorrowhum:', tomorrow_hum)
         if today_cast and tommorow_cast:
@@ -407,8 +416,8 @@ class BasePlugin:
             Domoticz.Device(Name="Wind", Unit=8, TypeName='Wind', Used=1).Create()
             Domoticz.Device(Name="Weather forecast(Today)", Unit=9, TypeName='Text', Used=1).Create()
             Domoticz.Device(Name="Weather forecast(Tomorrow)", Unit=10, TypeName='Text', Used=1).Create()
-        self.get_weather_data()
-        self.get_forcast_data()
+        # self.get_weather_data()
+        # self.get_forcast_data()
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -498,3 +507,9 @@ def DumpConfigToLog():
         Domoticz.Debug("Device sValue:   '" + Devices[x].sValue + "'")
         Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
     return
+
+
+if 6 <= datetime.datetime.now().hour <= 16:
+    print('day')
+else:
+    print('night')
