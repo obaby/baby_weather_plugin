@@ -276,7 +276,7 @@ class BasePlugin:
         if co:
             self.update_device_value(44, int(co), str(co))
 
-    def get_forcast_data(self):
+    def get_forecast_data(self):
         data = requests.get(self.server_name + self.forcast_path).json()
         Domoticz.Log('forcast:')
         # Domoticz.Log(data)
@@ -284,7 +284,7 @@ class BasePlugin:
         today_tmp_min = today_tmp_max = None
         tomorrow_tmp_min = tomorrow_tmp_max = None
         today_hum = tomorrow_hum = None
-        today_forcast_statu = forcast_status = '0'
+        today_forecast_statu = forcast_status = '0'
         today_press = tommorw_press = None
         if self.server_type == 1:
             status = data['status']
@@ -313,7 +313,7 @@ class BasePlugin:
                 tomorrow_hum = hum[1]['avg']
                 tomorrow_hum = float(tomorrow_hum) * 100
                 forcast_status = self.get_caiyun_forecast_status(tommorow_cast)
-                today_forcast_statu = self.get_caiyun_forecast_status(today_cast)
+                today_forecast_statu = self.get_caiyun_forecast_status(today_cast)
                 press = forcast['pres']
                 today_press = press[0]['avg']
                 tommorw_press = press[1]['avg']
@@ -340,7 +340,7 @@ class BasePlugin:
                     today_hum = int(result[0]['hum'])
                     tomorrow_hum = int(result[1]['hum'])
                     forcast_status = self.get_heweather_forecast_status(tomorrow_cast_id)
-                    today_forcast_statu = self.get_heweather_forecast_status(today_cast_id)
+                    today_forecast_statu = self.get_heweather_forecast_status(today_cast_id)
                     today_press = int(result[0]['pres'])
                     tommorw_press = int(result[1]['pres'])
         if today_cast:
@@ -357,7 +357,7 @@ class BasePlugin:
                                      + str(int(today_hum)) + ';'
                                      + str(self.calc_hum_status(today_hum)) + ';'
                                      + str(today_press) + ';'
-                                     + str(today_forcast_statu))
+                                     + str(today_forecast_statu))
             self.update_device_value(11, 0, str(tomorrow_tmp_max) + ';'
                                      + str(int(tomorrow_hum)) + ';'
                                      + str(self.calc_hum_status(tomorrow_hum)) + ';'
@@ -444,7 +444,7 @@ class BasePlugin:
         self.intervalTime += 1
         if self.intervalTime >= self.repeatTime:
             self.get_weather_data()
-            self.get_forcast_data()
+            self.get_forecast_data()
             self.intervalTime = 0
 
 
