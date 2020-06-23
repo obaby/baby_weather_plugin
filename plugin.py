@@ -137,32 +137,32 @@ class BasePlugin:
             status = '3'
         return status
 
-    def get_heweather_forcast_status(self, status):
+    def get_heweather_forecast_status(self, status):
         # Forecast: 0 - None, 1 - Sunny, 2 - PartlyCloudy, 3 - Cloudy, 4 - Rain
-        forcast = '0'
+        forecast = '0'
         status = int(status)
         if status in [100, 200, 201, ]:
-            forcast = '1'
+            forecast = '1'
         if status in [102, 103]:
-            forcast = '2'
+            forecast = '2'
         if status in [101, 104]:
-            forcast = '3'
+            forecast = '3'
         if 300 <= status <= 400:
-            forcast = '4'
-        return forcast
+            forecast = '4'
+        return forecast
 
-    def get_caiyun_forcast_status(self, status):
-        forcast = '0'
+    def get_caiyun_forecast_status(self, status):
+        forecast = '0'
         if status in ['CLEAR_DAY', 'CLEAR_NIGHT']:
-            forcast = '1'
+            forecast = '1'
         if status in ['PARTLY_CLOUDY_DAY', 'PARTLY_CLOUDY_NIGHT']:
-            forcast = '2'
+            forecast = '2'
         if status in ['CLOUDY']:
-            forcast = '3'
+            forecast = '3'
         if status in ['LIGHT_RAIN', 'MODERATE_RAIN', 'HEAVY_RAIN', 'STORM_RAIN', 'LIGHT_SNOW', 'MODERATE_SNOW',
                       'HEAVY_SNOW', 'STORM_SNOW']:
-            forcast = '4'
-        return forcast
+            forecast = '4'
+        return forecast
 
     def __init__(self):
         # self.var = 123
@@ -275,9 +275,9 @@ class BasePlugin:
         data = requests.get(self.server_name + self.forcast_path).json()
         Domoticz.Log('forcast:')
         # Domoticz.Log(data)
-        today_cast = tommorw_cast = None
+        today_cast = tommorow_cast = None
         today_tmp_min = today_tmp_max = None
-        tomorrwo_tmp_min = tomorrow_tmp_max = None
+        tomorrow_tmp_min = tomorrow_tmp_max = None
         today_hum = tomorrow_hum = None
         today_forcast_statu = forcast_status = '0'
         today_press = tommorw_press = None
@@ -288,12 +288,12 @@ class BasePlugin:
                 forcast = result['daily']
                 skyicon = forcast['skycon']
                 today_cast = skyicon[0]['value']
-                tommorw_cast = skyicon[1]['value']
+                tommorow_cast = skyicon[1]['value']
                 # Domoticz.Log(tommorw_cast)
                 tmps = forcast['temperature']
                 today_tmp_min = tmps[0]['min']
                 today_tmp_max = tmps[0]['max']
-                tomorrwo_tmp_min = tmps[1]['min']
+                tomorrow_tmp_min = tmps[1]['min']
                 tomorrow_tmp_max = tmps[1]['max']
                 hum = forcast['humidity']
                 #  {
@@ -307,8 +307,8 @@ class BasePlugin:
 
                 tomorrow_hum = hum[1]['avg']
                 tomorrow_hum = float(tomorrow_hum) * 100
-                forcast_status = self.get_caiyun_forcast_status(tommorw_cast)
-                today_forcast_statu = self.get_caiyun_forcast_status(today_cast)
+                forcast_status = self.get_caiyun_forecast_status(tommorow_cast)
+                today_forcast_statu = self.get_caiyun_forecast_status(today_cast)
                 press = forcast['pres']
                 today_press = press[0]['avg']
                 tommorw_press = press[1]['avg']
@@ -320,29 +320,29 @@ class BasePlugin:
                 if result['status'] == 'ok':
                     result = result['daily_forecast']
                     today_cast = result[0]['cond_txt_d']
-                    tommorw_cast = result[1]['cond_txt_d']
+                    tommorow_cast = result[1]['cond_txt_d']
                     today_cast_id = result[0]['cond_code_d']
                     tomorrow_cast_id = result[1]['cond_code_d']
                     # Domoticz.Log(tommorw_cast)
                     # Domoticz.Log(today_cast)
                     today_tmp_min = result[0]['tmp_min']
-                    tomorrwo_tmp_min = result[1]['tmp_min']
+                    tomorrow_tmp_min = result[1]['tmp_min']
                     today_tmp_max = result[0]['tmp_max']
                     tomorrow_tmp_max = result[1]['tmp_max']
                     today_hum = int(result[0]['hum'])
                     tomorrow_hum = int(result[1]['hum'])
-                    forcast_status = self.get_heweather_forcast_status(tomorrow_cast_id)
-                    today_forcast_statu = self.get_heweather_forcast_status(today_cast_id)
+                    forcast_status = self.get_heweather_forecast_status(tomorrow_cast_id)
+                    today_forcast_statu = self.get_heweather_forecast_status(today_cast_id)
                     today_press = int(result[0]['pres'])
                     tommorw_press = int(result[1]['pres'])
         if today_cast:
             self.update_device_value(9, 0, str(today_cast) + ' 温度：' + str(today_tmp_min) + ' - ' + str(today_tmp_max))
-        if tommorw_cast:
+        if tommorow_cast:
             self.update_device_value(10, 0,
-                                     str(tommorw_cast) + ' 温度：' + str(tomorrwo_tmp_min) + ' - ' + str(tomorrow_tmp_max))
+                                     str(tommorow_cast) + ' 温度：' + str(tomorrow_tmp_min) + ' - ' + str(tomorrow_tmp_max))
         print('todayhum:', today_hum)
         print('tomorrowhum:', tomorrow_hum)
-        if today_cast and tommorw_cast:
+        if today_cast and tommorow_cast:
             # Temperature;Humidity;Humidity Status;Barometer;Forecast
             self.update_device_value(5, 0, str(today_tmp_min) + ';'
                                      + str(int(today_hum)) + ';'
