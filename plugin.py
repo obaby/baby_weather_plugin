@@ -508,8 +508,3 @@ def DumpConfigToLog():
         Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
     return
 
-
-if 6 <= datetime.datetime.now().hour <= 16:
-    print('day')
-else:
-    print('night')
