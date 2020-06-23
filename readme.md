@@ -41,7 +41,7 @@ pip3 install requests
 
 更新日志：  
 -----
-V2.0.1
+V2.0.1 (2020.06.22)
 - 修改传感器Temp+Hum为Temp+Hum+Baro
 - 增加Temp+Hum+Baro天气预报
 - 修复气压数值错误
