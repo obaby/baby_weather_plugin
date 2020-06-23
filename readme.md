@@ -39,7 +39,16 @@ requests
 pip3 install requests
 ```
 
+更新日志：  
+-----
+V2.0.1
+- 修改传感器Temp+Hum为Temp+Hum+Baro
+- 增加Temp+Hum+Baro天气预报
+- 修复气压数值错误
+- 增加天气预报舒适度
+- 增加天气预报具体天气信息（受限于domoticz目前只有几个天气信息，其余的例如雪、大风天气数值目前不知道，无法实现）
 
+-----
 > @author: obaby  
 > @license: (C) Copyright 2013-2020, obaby@mars.  
 > @contact: root@obaby.org.cn  
