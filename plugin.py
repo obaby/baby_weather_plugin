@@ -58,6 +58,7 @@
 """
 import requests
 import datetime
+import _thread
 
 try:
     import Domoticz
@@ -301,7 +302,7 @@ class BasePlugin:
         if no2:
             self.update_device_value(43, int(no2), str(no2))
         if co:
-            self.update_device_value(44, int(co), str(co))
+            self.update_device_value(44, int(float(co)), str(co))
 
 
 
@@ -473,16 +474,20 @@ class BasePlugin:
     def onDisconnect(self, Connection):
         Domoticz.Log("onDisconnect called")
 
+    def update_all_data(self):
+        self.get_weather_data()
+        self.get_forecast_data()
+        if self.server_type == 2:
+            self.get_heweather_air_data()
+
     def onHeartbeat(self):
         Domoticz.Log("onHeartbeat called")
         self.intervalTime += 1
         if self.intervalTime >= self.repeatTime:
             try:
-                self.get_weather_data()
-                self.get_forecast_data()
-                if self.server_type == 2:
-                    self.get_heweather_air_data()
-            except:
+                _thread.start_new_thread(self.update_all_data, ())
+            except Exception as e:
+                print(e)
                 pass
             self.intervalTime = 0
 
