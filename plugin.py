@@ -45,6 +45,7 @@
     <param field="Mode2" label="API KEY" width="600px" required="true" default="**********************"/>
     <param field="Mode3" label="经度" width="600px" required="true" default="116.40"/>
     <param field="Mode4" label="纬度" width="600px" required="true" default="39.915156"/>
+    <param field="Address" label="城市（拼音）" width="600px" required="true" default="qingdao"/>
     <param field="Mode5" label="更新频率(分钟)" width="60px" required="true" default="60"/>
     <param field="Mode6" label="Debug" width="75px">
         <options>
@@ -276,6 +277,34 @@ class BasePlugin:
         if co:
             self.update_device_value(44, int(co), str(co))
 
+    def get_heweather_air_data(self):
+        data = requests.get(self.server_name + self.heweather_air_path).json()
+        print(self.server_name + self.heweather_air_path)
+        Domoticz.Log('air:')
+        # print(data)
+        pm25 = pm10 = so2 = no2 = co = None
+        if len(data['HeWeather6']) > 0:
+            result = data['HeWeather6'][0]
+            if result['status'] == 'ok':
+                result = result['air_now_city']
+                pm25 = result['pm25']
+                pm10 = result['pm10']
+                no2 = result['no2']
+                so2 = result['so2']
+                co = result['co']
+        if pm25:
+            self.update_device_value(4, int(pm25), str(pm25))
+        if pm10:
+            self.update_device_value(41, int(pm10), str(pm10))
+        if so2:
+            self.update_device_value(41, int(so2), str(so2))
+        if no2:
+            self.update_device_value(43, int(no2), str(no2))
+        if co:
+            self.update_device_value(44, int(co), str(co))
+
+
+
     def get_forecast_data(self):
         data = requests.get(self.server_name + self.forcast_path).json()
         Domoticz.Log('forcast:')
@@ -366,8 +395,10 @@ class BasePlugin:
 
     def onStart(self):
         Domoticz.Log("onStart called")
+        Domoticz.Debugging(128)
         self.repeatTime = int(Parameters["Mode5"]) * 6
         self.intervalTime = self.repeatTime
+        self.heweather_air_path = ''
 
         if Parameters["Mode6"] == "Debug":
             Domoticz.Debugging(1)
@@ -387,6 +418,9 @@ class BasePlugin:
             self.server_type = 2
             self.forcast_path = '/s6/weather/forecast?location=' + Parameters['Mode3'] + ',' + Parameters[
                 'Mode4'] + '&key=' + Parameters['Mode2']
+
+            self.heweather_air_path = '/s6/air/now?location=' + Parameters['Address'] + '&key=' + Parameters['Mode2']
+            print(self.heweather_air_path)
 
         if (len(Devices) == 0):
             Domoticz.Device(Name="Temperature", Unit=1, TypeName='Temperature', Used=1).Create()
@@ -443,8 +477,13 @@ class BasePlugin:
         Domoticz.Log("onHeartbeat called")
         self.intervalTime += 1
         if self.intervalTime >= self.repeatTime:
-            self.get_weather_data()
-            self.get_forecast_data()
+            try:
+                self.get_weather_data()
+                self.get_forecast_data()
+                if self.server_type == 2:
+                    self.get_heweather_air_data()
+            except:
+                pass
             self.intervalTime = 0
 
 
