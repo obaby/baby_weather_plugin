@@ -5,13 +5,13 @@
 # http://www.findu.co
 # http://www.obaby.org.cn
 """
-<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="2.1.0" wikilink="http://www.h4ck.org.cn" externallink="https://github.com/obaby/baby_weather_plugin">
+<plugin key="BabyWeatherPlugin" name="Baby Weather Plugin" author="obaby" version="2.1.6" wikilink="http://www.h4ck.org.cn" externallink="https://github.com/obaby/baby_weather_plugin">
     <description>
         <h2>Baby Weather Plugin</h2><br/>
         支持从国内的天气服务器获取天气信息
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>版本号：2.1.0</li>
+            <li>版本号：2.1.6</li>
             <li>支持和风天气</li>
             <li>支持彩云天气</li>
             <li>支持今天明天的天气预报信息</li>

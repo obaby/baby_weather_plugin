@@ -20,10 +20,13 @@ Domoticz Baby Weather Plugin
 安装方法：
 > 1. 下载zip之后解压缩，放入Domoticz/plugins目录下，重启服务端。去网页端添加硬件即可。  
 > 2. 切换到插件目录下，git clone https://github.com/obaby/baby_weather_plugin 重启服务端。去网页端添加硬件即可。  
+> 3. 和风天气的控制质量接口，通过经纬度进行获取会提示没有权限，所以需要输入当前城市的拼音。如果没有空气质量信息，请检查这个参数是否正确。
+
 
 添加硬件截图：  
 ![device](screenshot/device.jpg)  
-
+V2.1.6版本更新：
+![config](screenshot/config.png)  
 终端运行效果:  
 ![console](screenshot/console.png)  
 
@@ -41,6 +44,12 @@ pip3 install requests
 
 更新日志：  
 -----
+
+V2.1.6 (2020.07.01)
+- 增加和风天气的空气指数
+- 修改数据更新为独立线程处理
+
+
 V2.1.0 (2020.06.23)
 - 修复和风天气湿度数值未获取
 - 调整和风天气预报逻辑，16：00之后今天的天气预报改为晚间数据
