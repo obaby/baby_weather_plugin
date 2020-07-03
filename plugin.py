@@ -423,6 +423,10 @@ class BasePlugin:
             self.heweather_air_path = '/s6/air/now?location=' + Parameters['Address'] + '&key=' + Parameters['Mode2']
             print(self.heweather_air_path)
 
+        # 京东万象 https://wx.jdcloud.com/market/datas/26/10610
+        # https://wx.jdcloud.com/gwtest/init/10610
+        # Url:https://way.jd.com/he/freeweather?city=60.194.130.1&appkey=feb999deba4abc351b6be5
+
         if (len(Devices) == 0):
             Domoticz.Device(Name="Temperature", Unit=1, TypeName='Temperature', Used=1).Create()
             Domoticz.Device(Name="Feeling Temperature", Unit=6, TypeName='Temperature', Used=1).Create()
